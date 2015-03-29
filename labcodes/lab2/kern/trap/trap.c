@@ -34,7 +34,7 @@ static struct pseudodesc idt_pd = {
 /* idt_init - initialize IDT to each of the entry points in kern/trap/vectors.S */
 void
 idt_init(void) {
-     /* LAB1 YOUR CODE : STEP 2 */
+     /* LAB1 2012011364 : STEP 2 */
      /* (1) Where are the entry addrs of each Interrupt Service Routine (ISR)?
       *     All ISR's entry addrs are stored in __vectors. where is uintptr_t __vectors[] ?
       *     __vectors[] is in kern/trap/vector.S which is produced by tools/vector.c
@@ -46,6 +46,14 @@ idt_init(void) {
       *     You don't know the meaning of this instruction? just google it! and check the libs/x86.h to know more.
       *     Notice: the argument of lidt is idt_pd. try to find it!
       */
+     extern uintptr_t __vectors[];
+     int i = 0;
+     for (i = 0; i<256; i++) {
+    	 SETGATE(idt[i], 0, GD_KTEXT , __vectors[i], 0);
+     }
+     SETGATE(idt[T_SYSCALL ], 1, GD_UTEXT, __vectors[T_SYSCALL ], 3);
+     lidt(&idt_pd); //lidt的参数为struct pseudodesc指针
+
 }
 
 static const char *
@@ -141,12 +149,16 @@ trap_dispatch(struct trapframe *tf) {
 
     switch (tf->tf_trapno) {
     case IRQ_OFFSET + IRQ_TIMER:
-        /* LAB1 YOUR CODE : STEP 3 */
+        /* LAB1 2012011364 : STEP 3 */
         /* handle the timer interrupt */
         /* (1) After a timer interrupt, you should record this event using a global variable (increase it), such as ticks in kern/driver/clock.c
          * (2) Every TICK_NUM cycle, you can print some info using a funciton, such as print_ticks().
          * (3) Too Simple? Yes, I think so!
          */
+    	ticks++; //ticks在clock.c中的clock_init函数中也初始化为0
+    	if (ticks % TICK_NUM == 0) {
+    		print_ticks();
+    	}
         break;
     case IRQ_OFFSET + IRQ_COM1:
         c = cons_getc();

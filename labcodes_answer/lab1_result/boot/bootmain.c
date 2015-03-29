@@ -103,7 +103,7 @@ bootmain(void) {
 
     // call the entry point from the ELF header
     // note: does not return
-    ((void (*)(void))(ELFHDR->e_entry & 0xFFFFFF))();
+    ((void (*)(void))(ELFHDR->e_entry & 0xFFFFFF))(); //强转为函数指针，再调用，即进入器入口地址
 
 bad:
     outw(0x8A00, 0x8A00);

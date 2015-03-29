@@ -146,7 +146,7 @@ print_regs(struct pushregs *regs) {
 static void
 trap_dispatch(struct trapframe *tf) {
     char c;
-
+    //cprintf("trap no:%d\n",tf->tf_trapno);
     switch (tf->tf_trapno) {
     case IRQ_OFFSET + IRQ_TIMER:
         /* LAB1 2012011364 : STEP 3 */
@@ -180,6 +180,7 @@ trap_dispatch(struct trapframe *tf) {
     default:
         // in kernel, it must be a mistake
         if ((tf->tf_cs & 3) == 0) {
+        	//cprintf("lalalalala\n");
             print_trapframe(tf);
             panic("unexpected trap in kernel.\n");
         }
