@@ -71,7 +71,7 @@ default_init(void) { //这里直接用吧，貌似木有什么需要改的
 static void
 default_init_memmap(struct Page *base, size_t n) { //将一个个连续的空闲块加到空闲块列表中 siz_t n是page数
     assert(n > 0);
-    cprintf("  init memmap debug size: %d \n", n);
+    //cprintf("  init memmap debug size: %d \n", n);
     struct Page *p = base;
     for (; p != base + n; p ++) {
         assert(PageReserved(p));
