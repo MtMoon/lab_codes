@@ -33,6 +33,9 @@ static struct taskstate ts = {0};
 
 // virtual address of physicall page array
 struct Page *pages;
+
+
+
 // amount of physical memory (in pages)
 size_t npage = 0;
 
@@ -136,7 +139,8 @@ gdt_init(void) {
 //init_pmm_manager - initialize a pmm_manager instance
 static void
 init_pmm_manager(void) {
-    pmm_manager = &default_pmm_manager;
+   pmm_manager = &default_pmm_manager;
+	//pmm_manager = &buddy_pmm_manager;
     cprintf("memory management: %s\n", pmm_manager->name);
     pmm_manager->init();
 }
@@ -213,15 +217,26 @@ page_init(void) {
     extern char end[];  //在kernel.ld中，end是BBS段的结束地址
 
     npage = maxpa / PGSIZE; //X86物理内存地址起始为0
+    //cprintf(" total page num :%d\n", npage);
     pages = (struct Page *)ROUNDUP((void *)end, PGSIZE); //由于bootloader加载ucore的结束地址（用全局指针变量end记录）以上的空间没有被使用
                                                                                                                    //把end按页大小为边界去整后，作为管理页级物理内存空间所需的Page结构的内存空间
     for (i = 0; i < npage; i ++) {
         SetPageReserved(pages + i);  //将用来存内存管理结构pages的空间设为已用
     }
 
-    uintptr_t freemem = PADDR((uintptr_t)pages + sizeof(struct Page) * npage); //空闲空间的起始地址
+    buddy = (unsigned *)ROUNDUP((void *)((uintptr_t)pages + sizeof(struct Page) * npage), PGSIZE);
+    //cprintf("buddy addr0: %08llx \n", buddy);
+
+    //uintptr_t freemem0 = PADDR((uintptr_t)pages + sizeof(struct Page) * npage);
+
+
+    uintptr_t freemem= PADDR((uintptr_t)buddy + sizeof(unsigned) * npage*2);
+
+
+    //cprintf("freemem0 %08llx \n", freemem0);
     //cprintf("freemem %08llx \n", freemem);
 
+    //cprintf("pages addr0: %08llx \n", pages);
     for (i = 0; i < memmap->nr_map; i ++) {
         uint64_t begin = memmap->map[i].addr, end = begin + memmap->map[i].size;
         //cprintf(" original memory debug begin: %08llx, end: %08llx ,\n", begin,end);
@@ -389,6 +404,7 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
     	}
     	struct Page *p = alloc_page(); // CAUTION: this page is used for page table, not for common data page
     	if (p == NULL) {
+    		//cprintf("alloc NULL\n");
     		return NULL; //申请失败
     	}
     	set_page_ref(p,1); // (4) set page reference
