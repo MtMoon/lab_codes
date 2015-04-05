@@ -36,10 +36,10 @@ kern_init(void) {
     pic_init();                 // init interrupt controller
     idt_init();                 // init interrupt descriptor table
 
-    vmm_init();                 // init virtual memory management
+    vmm_init();                 // init virtual memory management lab3新增
 
-    ide_init();                 // init ide devices
-    swap_init();                // init swap
+    ide_init();                 // init ide devices lab3新增
+    swap_init();                // init swap lab3 新增
 
     clock_init();               // init clock interrupt
     intr_enable();              // enable irq interrupt
