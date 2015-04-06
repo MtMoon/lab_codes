@@ -413,7 +413,7 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
     	memset(KADDR(pa), 0, PGSIZE); //清空4k的page
     	 // (7) set page directory entry's permission
     	//将这些位都置为1
-    	*pdep = pa | PTE_U | PTE_W | PTE_P;
+    	*pdep = pa | PTE_U | PTE_W | PTE_P ;
     }
 
     // (8) return page table entry

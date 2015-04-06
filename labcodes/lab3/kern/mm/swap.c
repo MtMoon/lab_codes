@@ -1,6 +1,7 @@
 #include <swap.h>
 #include <swapfs.h>
 #include <swap_fifo.h>
+#include <swap_clock.h>
 #include <stdio.h>
 #include <string.h>
 #include <memlayout.h>
@@ -39,6 +40,7 @@ swap_init(void)
      
 
      sm = &swap_manager_fifo;
+     //sm = &swap_manager_clock;
      int r = sm->init();
      
      if (r == 0)
@@ -111,7 +113,7 @@ swap_out(struct mm_struct *mm, int n, int in_tick)
           }
           else {
                     cprintf("swap_out: i %d, store page in vaddr 0x%x to disk swap entry %d\n", i, v, page->pra_vaddr/PGSIZE+1);
-                    *ptep = (page->pra_vaddr/PGSIZE+1)<<8;
+                    *ptep = (page->pra_vaddr/PGSIZE+1)<<8; //线性地址按页对齐，即是页帧号，左移八位作为页表项
                     free_page(page);
           }
           
@@ -127,6 +129,9 @@ swap_in(struct mm_struct *mm, uintptr_t addr, struct Page **ptr_result)
      assert(result!=NULL);
 
      pte_t *ptep = get_pte(mm->pgdir, addr, 0);
+     *ptep |= PTE_A; //换入后，置使用为为1，修改位为0, preset为1
+     *ptep |= PTE_P;
+     *ptep &= (0xffffffff & (~PTE_D));
      // cprintf("SWAP: load ptep %x swap entry %d to vaddr 0x%08x, page %x, No %d\n", ptep, (*ptep)>>8, addr, result, (result-pages));
     
      int r;
@@ -138,7 +143,6 @@ swap_in(struct mm_struct *mm, uintptr_t addr, struct Page **ptr_result)
      *ptr_result=result;
      return 0;
 }
-
 
 
 static inline void
@@ -160,6 +164,42 @@ check_content_set(void)
      assert(pgfault_num==4);
      *(unsigned char *)0x4010 = 0x0d;
      assert(pgfault_num==4);
+}
+
+//设置页表项中的相应位，type为0是读，type为1是写
+static void setFlag(uintptr_t la, struct mm_struct * clockmm, int type) {
+	pte_t* pte = get_pte(clockmm->pgdir,la,1);
+
+	//设置访问位为1
+	*pte = *pte | (PTE_A);
+	*pte &= (0xffffffff&(~PTE_D));
+	if (type == 1) {
+		*pte |= (PTE_D); //设置修改位为1
+	}
+}
+
+static  void check_content_set_clock(struct mm_struct * clockmm )
+{
+	//cprintf("enter set clock\n");
+	//clock算法用的测试初始化设置
+	//虽然以下四次操作都是写，但是我们通过setFlag函数认为操作，假装四次操作分别是读，写，读，写
+     *(unsigned char *)0x1000 = 0x0a;
+     setFlag(0x1000,clockmm,1);
+     assert(pgfault_num==1);
+
+     *(unsigned char *)0x2000 = 0x0b;
+     setFlag(0x2000,clockmm,0);
+     assert(pgfault_num==2);
+
+
+     *(unsigned char *)0x3000 = 0x0c;
+     setFlag(0x3000,clockmm,1);
+     assert(pgfault_num==3);
+
+     *(unsigned char *)0x4000 = 0x0d;
+     setFlag(0x4000,clockmm,0);
+     assert(pgfault_num==4);
+
 }
 
 static inline int
@@ -241,6 +281,8 @@ check_swap(void)
      pgfault_num=0;
      
      check_content_set();
+     //check_content_set_clock(mm); //clock算法用
+     //cprintf("check content set ok\n");
      assert( nr_free == 0);         
      for(i = 0; i<MAX_SEQ_NO ; i++) 
          swap_out_seq_no[i]=swap_in_seq_no[i]=-1;
