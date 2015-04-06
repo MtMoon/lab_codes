@@ -306,8 +306,8 @@ int
 do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
     int ret = -E_INVAL; //-3 在trap.c中，返回不是0即报错
     //try to find a vma which include addr
+    //cprintf("do page fault at 0x%08x\n", addr);
     struct vma_struct *vma = find_vma(mm, addr);
-
     pgfault_num++;
     //If the addr is in the range of a mm's vma?
     if (vma == NULL || vma->vm_start > addr) {
@@ -368,12 +368,14 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
 
     /*LAB3 EXERCISE 1: 2012011364*/
     //(1) try to find a pte, if pte's PT(Page Table) isn't existed, then create a PT.
+    //cprintf("lalalal1\n");
     ptep = get_pte(mm->pgdir, addr, 1);
     if (ptep == NULL) { //根据get_pte的实现，如果返回NULL，表示页表不存在，且分配新的页表空间失败
     	goto failed;
     }
     //(2) if the phy addr isn't exist, then alloc a page & map the phy addr with logical addr
     if (*ptep == 0) { //如果页表存在，但页表项为0，说明该页表项尚未分配物理空间
+       // cprintf("lalalal2.5\n");
     	struct Page* newppage = pgdir_alloc_page(mm->pgdir,addr,perm);
     	if (newppage == NULL) { //分配失败
     		goto failed;
@@ -414,6 +416,7 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
 
    ret = 0;
 failed:
+ 	 //cprintf("lalalal2,ret:%d\n",ret);
     return ret;
 }
 

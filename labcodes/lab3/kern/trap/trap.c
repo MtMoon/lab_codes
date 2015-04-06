@@ -180,6 +180,7 @@ trap_dispatch(struct trapframe *tf) {
     case T_PGFLT:  //page fault
         if ((ret = pgfault_handler(tf)) != 0) {  //pgfault_handler返回一个int，该int由pgfault_handler调用的do_pgfault返回
             print_trapframe(tf);
+            //cprintf("handle pgfault failed. %d\n", ret);
             panic("handle pgfault failed. %e\n", ret);
         }
         break;
