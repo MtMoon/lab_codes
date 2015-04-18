@@ -41,7 +41,7 @@ static struct pseudodesc idt_pd = {
 /* idt_init - initialize IDT to each of the entry points in kern/trap/vectors.S */
 void
 idt_init(void) {
-     /* LAB1 YOUR CODE : STEP 2 */
+     /* LAB1 2012011364 : STEP 2 */
      /* (1) Where are the entry addrs of each Interrupt Service Routine (ISR)?
       *     All ISR's entry addrs are stored in __vectors. where is uintptr_t __vectors[] ?
       *     __vectors[] is in kern/trap/vector.S which is produced by tools/vector.c
@@ -53,9 +53,19 @@ idt_init(void) {
       *     You don't know the meaning of this instruction? just google it! and check the libs/x86.h to know more.
       *     Notice: the argument of lidt is idt_pd. try to find it!
       */
-     /* LAB5 YOUR CODE */ 
+     extern uintptr_t __vectors[];
+     int i = 0;
+     for (i = 0; i<256; i++) {
+    	 SETGATE(idt[i], 0, GD_KTEXT , __vectors[i], 0);
+     }
+     SETGATE(idt[T_SYSCALL ], 1, GD_KTEXT, __vectors[T_SYSCALL ], 3); //注意这里代码段选择子应该是内核段
+     lidt(&idt_pd); //lidt的参数为struct pseudodesc指针
+
+
+     /* LAB5 2012011364*/
      //you should update your lab1 code (just add ONE or TWO lines of code), let user app to use syscall to get the service of ucore
      //so you should setup the syscall interrupt gate in here
+     //貌似lab1时就做了
 }
 
 static const char *
@@ -190,7 +200,7 @@ trap_dispatch(struct trapframe *tf) {
 
     switch (tf->tf_trapno) {
     case T_PGFLT:  //page fault
-        if ((ret = pgfault_handler(tf)) != 0) {
+        if ((ret = pgfault_handler(tf)) != 0) {  //pgfault_handler返回一个int，该int由pgfault_handler调用的do_pgfault返回
             print_trapframe(tf);
             if (current == NULL) {
                 panic("handle pgfault failed. ret=%d\n", ret);
@@ -213,16 +223,22 @@ trap_dispatch(struct trapframe *tf) {
     LAB3 : If some page replacement algorithm(such as CLOCK PRA) need tick to change the priority of pages,
     then you can add code here. 
 #endif
-        /* LAB1 YOUR CODE : STEP 3 */
+        /* LAB1 2012011364 : STEP 3 */
         /* handle the timer interrupt */
         /* (1) After a timer interrupt, you should record this event using a global variable (increase it), such as ticks in kern/driver/clock.c
          * (2) Every TICK_NUM cycle, you can print some info using a funciton, such as print_ticks().
          * (3) Too Simple? Yes, I think so!
          */
+    	ticks++; //ticks在clock.c中的clock_init函数中也初始化为0
+    	if (ticks % TICK_NUM == 0) {
+    		print_ticks();
+    		current->need_resched = 1; //原来时间片是在这里做的!
+    	}
         /* LAB5 YOUR CODE */
         /* you should upate you lab1 code (just add ONE or TWO lines of code):
          *    Every TICK_NUM cycle, you should set current process's current->need_resched = 1
          */
+
   
         break;
     case IRQ_OFFSET + IRQ_COM1:
