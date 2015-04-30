@@ -114,6 +114,7 @@ alloc_proc(void) {
     	proc->tf = NULL;
     	proc->cr3 = boot_cr3; //内核线程,直接使用内核堆栈
     	proc->flags = 0;
+    	proc->lab6_stride = 0;
     	memset(proc->name,0,PROC_NAME_LEN);
     	memset(&(proc->context),0,sizeof(struct context));
 
@@ -835,7 +836,7 @@ user_main(void *arg) {
 #ifdef TEST
     KERNEL_EXECVE2(TEST, TESTSTART, TESTSIZE);
 #else
-    KERNEL_EXECVE(hello);
+    KERNEL_EXECVE(priority);
 #endif
     panic("user_main execve failed.\n");
 }

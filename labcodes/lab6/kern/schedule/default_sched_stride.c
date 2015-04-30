@@ -8,10 +8,11 @@
 
 /* You should define the BigStride constant here*/
 /* LAB6: YOUR CODE */
-#define BIG_STRIDE    /* you should give a value, and is ??? */
+#define BIG_STRIDE 0x7FFFFFFF   /* you should give a value, and is ??? */
 
 /* The compare function for two skew_heap_node_t's and the
  * corresponding procs*/
+//比较器
 static int
 proc_stride_comp_f(void *a, void *b)
 {
@@ -35,12 +36,15 @@ proc_stride_comp_f(void *a, void *b)
  * hint: see libs/list.h for routines of the list structures.
  */
 static void
-stride_init(struct run_queue *rq) {
+stride_init(struct run_queue *rq) { //这里和RR差不多
      /* LAB6: YOUR CODE 
       * (1) init the ready process list: rq->run_list
       * (2) init the run pool: rq->lab6_run_pool
       * (3) set number of process: rq->proc_num to 0       
       */
+	list_init(&(rq->run_list));
+	rq->lab6_run_pool = NULL;
+	rq->proc_num = 0;
 }
 
 /*
@@ -67,6 +71,13 @@ stride_enqueue(struct run_queue *rq, struct proc_struct *proc) {
       * (3) set proc->rq pointer to rq
       * (4) increase rq->proc_num
       */
+	//直接使用skew_heap的优先队列
+	rq->lab6_run_pool = skew_heap_insert(rq->lab6_run_pool, &(proc->lab6_run_pool),proc_stride_comp_f);
+	if (proc->time_slice == 0 || proc->time_slice>rq->max_time_slice) {
+		proc->time_slice = rq->max_time_slice;
+	}
+	proc->rq = rq;
+	rq->proc_num++;
 }
 
 /*
@@ -85,6 +96,9 @@ stride_dequeue(struct run_queue *rq, struct proc_struct *proc) {
       *         skew_heap_remove: remove a entry from skew_heap
       *         list_del_init: remove a entry from the  list
       */
+		rq->lab6_run_pool = skew_heap_remove(rq->lab6_run_pool,&(proc->lab6_run_pool),proc_stride_comp_f);
+		rq->proc_num--;
+
 }
 /*
  * stride_pick_next pick the element from the ``run-queue'', with the
@@ -108,6 +122,20 @@ stride_pick_next(struct run_queue *rq) {
       * (2) update p;s stride value: p->lab6_stride
       * (3) return p
       */
+	if (rq->lab6_run_pool == NULL) {
+		return NULL;
+	}
+
+	struct proc_struct* next = le2proc(rq->lab6_run_pool, lab6_run_pool);
+	if (next->lab6_priority == 0) { //注意不能除0
+		next->lab6_stride += BIG_STRIDE;
+
+	} else {
+		next->lab6_stride += BIG_STRIDE / next->lab6_priority;
+	}
+
+	return next;
+
 }
 
 /*
@@ -121,9 +149,14 @@ stride_pick_next(struct run_queue *rq) {
 static void
 stride_proc_tick(struct run_queue *rq, struct proc_struct *proc) {
      /* LAB6: YOUR CODE */
+	if (proc->time_slice>0) {
+		proc->time_slice--;
+	} else if (proc->time_slice == 0) {
+		proc->need_resched = 1; //时间片用完，即需要调度
+	}
 }
 
-struct sched_class default_sched_class = {
+struct sched_class default_sched_stride_class = {
      .name = "stride_scheduler",
      .init = stride_init,
      .enqueue = stride_enqueue,
