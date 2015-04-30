@@ -734,7 +734,6 @@ repeat:
     if (haskid) {
         current->state = PROC_SLEEPING;
         current->wait_state = WT_CHILD;
-        cprintf();
         schedule();
         if (current->flags & PF_EXITING) {
             do_exit(-E_KILLED);
