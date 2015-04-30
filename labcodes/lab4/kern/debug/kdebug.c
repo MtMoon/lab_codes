@@ -7,7 +7,7 @@
 #include <kdebug.h>
 #include <kmonitor.h>
 #include <assert.h>
-#include <proc.g>
+#include <proc.c>
 
 #define STACKFRAME_DEPTH 20
 
