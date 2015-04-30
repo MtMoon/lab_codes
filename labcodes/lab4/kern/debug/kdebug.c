@@ -7,6 +7,7 @@
 #include <kdebug.h>
 #include <kmonitor.h>
 #include <assert.h>
+#include <proc.g>
 
 #define STACKFRAME_DEPTH 20
 
@@ -307,6 +308,7 @@ print_stackframe(void) {
       *                   the calling funciton's ebp = ss:[ebp]
       */
 	// read_ebp and read_eip the return is uint32_t
+	cprintf("current: %d", current);
  	uint32_t ebp = read_ebp();
 	uint32_t eip = read_eip();
 	int i = 0;

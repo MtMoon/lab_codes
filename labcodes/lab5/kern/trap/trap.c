@@ -53,7 +53,8 @@ idt_init(void) {
       *     You don't know the meaning of this instruction? just google it! and check the libs/x86.h to know more.
       *     Notice: the argument of lidt is idt_pd. try to find it!
       */
-     extern uintptr_t __vectors[];
+
+    extern uintptr_t __vectors[];
      int i = 0;
      for (i = 0; i<256; i++) {
     	 SETGATE(idt[i], 0, GD_KTEXT , __vectors[i], 0);
@@ -231,7 +232,8 @@ trap_dispatch(struct trapframe *tf) {
          */
     	ticks++; //ticks在clock.c中的clock_init函数中也初始化为0
     	if (ticks % TICK_NUM == 0) {
-    		print_ticks();
+    		//print_ticks();
+    		assert(current != NULL);
     		current->need_resched = 1; //原来时间片是在这里做的!
     	}
         /* LAB5 YOUR CODE */

@@ -6,7 +6,6 @@
 #include <trap.h>
 #include <memlayout.h>
 
-
 // process's state in his life cycle
 enum proc_state {
     PROC_UNINIT = 0,  // uninitialized

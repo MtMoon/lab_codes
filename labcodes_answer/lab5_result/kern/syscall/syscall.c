@@ -21,6 +21,7 @@ sys_fork(uint32_t arg[]) {
 
 static int
 sys_wait(uint32_t arg[]) {
+	//print_stackframe();
     int pid = (int)arg[0];
     int *store = (int *)arg[1];
     return do_wait(pid, store);
