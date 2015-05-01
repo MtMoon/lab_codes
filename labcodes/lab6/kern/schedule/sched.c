@@ -4,6 +4,7 @@
 #include <sched.h>
 #include <stdio.h>
 #include <assert.h>
+#include <clock.h>
 #include <default_sched.h>
 
 // the list of timer
@@ -77,6 +78,7 @@ wakeup_proc(struct proc_struct *proc) {
 
 void
 schedule(void) {
+	//cprintf("time:%d\n",ticks);
     bool intr_flag;
     struct proc_struct *next;
     local_intr_save(intr_flag);

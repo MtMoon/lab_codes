@@ -72,7 +72,7 @@ sys_gettime(uint32_t arg[]) {
 static int
 sys_lab6_set_priority(uint32_t arg[])
 {
-	cprintf("lalalla,in set priority! the priority is %d\n", arg[0]);
+	//cprintf("lalalla,in set priority! the priority is %d\n", arg[0]);
     uint32_t priority = (uint32_t)arg[0];
     lab6_set_priority(priority);
     return 0;

@@ -572,7 +572,7 @@ run_test -prog 'matrix'     -check default_check                \
     ! - 'user panic at .*'
 
 pts=20
-timeout=1000
+timeout=500
 run_test -prog 'priority'      -check default_check             \
 	'sched class: stride_scheduler'                         \
         'kernel_execve: pid = 2, name = "priority".'            \

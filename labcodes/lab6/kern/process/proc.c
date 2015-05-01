@@ -115,6 +115,7 @@ alloc_proc(void) {
     	proc->cr3 = boot_cr3; //内核线程,直接使用内核堆栈
     	proc->flags = 0;
     	proc->lab6_stride = 0;
+    	proc->lab6_priority = 1;
     	memset(proc->name,0,PROC_NAME_LEN);
     	memset(&(proc->context),0,sizeof(struct context));
 
@@ -769,6 +770,7 @@ found:
     }
     if (code_store != NULL) {
         *code_store = proc->exit_code;
+        //cprintf("kernel: code_store:%d\n", *code_store);
     }
     local_intr_save(intr_flag);
     {
