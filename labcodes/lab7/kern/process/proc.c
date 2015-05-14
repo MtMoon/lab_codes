@@ -115,7 +115,7 @@ alloc_proc(void) {
     	proc->cr3 = boot_cr3; //内核线程,直接使用内核堆栈
     	proc->flags = 0;
     	proc->lab6_stride = 0;
-    	proc->lab6_priority = 1;
+    	proc->lab6_priority = 0;
     	memset(proc->name,0,PROC_NAME_LEN);
     	memset(&(proc->context),0,sizeof(struct context));
 
@@ -838,7 +838,7 @@ user_main(void *arg) {
 #ifdef TEST
     KERNEL_EXECVE2(TEST, TESTSTART, TESTSIZE);
 #else
-    KERNEL_EXECVE(exit);
+    KERNEL_EXECVE(priority);
 #endif
     panic("user_main execve failed.\n");
 }
@@ -853,8 +853,9 @@ init_main(void *arg) {
     if (pid <= 0) {
         panic("create user_main failed.\n");
     }
- extern void check_sync(void);
-    //check_sync();                // check philosopher sync problem
+    extern void check_sync(void);
+    cprintf("entering check_sync \n");
+    check_sync();                // check philosopher sync problem
 
     while (do_wait(0, NULL) == 0) { //等待子进程,即user_main变为僵尸状态,然后释放user_main
         schedule();
