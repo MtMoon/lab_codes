@@ -196,7 +196,7 @@ void check_sync(void){
     }
 
     //check condition variable
-    monitor_init(&mt, N);
+   /* monitor_init(&mt, N);
     for(i=0;i<N;i++){
         state_condvar[i]=THINKING;
         int pid = kernel_thread(philosopher_using_condvar, (void *)i, 0);
@@ -205,5 +205,5 @@ void check_sync(void){
         }
         philosopher_proc_condvar[i] = find_proc(pid);
         set_proc_name(philosopher_proc_condvar[i], "philosopher_condvar_proc");
-    }
+    }*/
 }
