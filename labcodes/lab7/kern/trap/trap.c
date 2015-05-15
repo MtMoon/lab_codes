@@ -58,9 +58,9 @@ idt_init(void) {
     extern uintptr_t __vectors[];
      int i = 0;
      for (i = 0; i<256; i++) {
-    	 SETGATE(idt[i], 0, GD_KTEXT , __vectors[i], 0);
+    	 SETGATE(idt[i], 0, GD_KTEXT , __vectors[i], DPL_KERNEL);
      }
-     SETGATE(idt[T_SYSCALL ], 1, GD_KTEXT, __vectors[T_SYSCALL ], 3); //注意这里代码段选择子应该是内核段
+     SETGATE(idt[T_SYSCALL ], 1, GD_KTEXT, __vectors[T_SYSCALL ], DPL_USER); //注意这里代码段选择子应该是内核段
      lidt(&idt_pd); //lidt的参数为struct pseudodesc指针
 
 
@@ -235,7 +235,7 @@ trap_dispatch(struct trapframe *tf) {
     	if (ticks % TICK_NUM == 0) {
     		//print_ticks();
     		assert(current != NULL);
-    		current->need_resched = 1; //原来时间片是在这里做的!
+    		//current->need_resched = 1; //原来时间片是在这里做的!
     	}
 	run_timer_list();
         /* LAB5 YOUR CODE */

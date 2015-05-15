@@ -68,10 +68,10 @@ _fifo_swap_out_victim(struct mm_struct *mm, struct Page ** ptr_page, int in_tick
      /*LAB3 EXERCISE 2: 2012011364*/
      //(1)  unlink the  earliest arrival page in front of pra_list_head qeueue
      list_entry_t* le = list_prev(head);
-     list_del(le);
      //(2)  set the addr of addr of this page to ptr_page  返回该页的地址的地址 囧 即Page* 的地址
      struct Page* page = le2page(le,pra_page_link); //注意，因为FIFO链表是用pra_page_link成员串起来的，根据le2page的原理，member应该选pra_page_link
-     *ptr_page = page;
+     list_del(le);     
+    *ptr_page = page;
      return 0;
 }
 

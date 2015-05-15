@@ -127,6 +127,10 @@ alloc_proc(void) {
     	 *       struct proc_struct *cptr, *yptr, *optr;     // relations between processes
     	 */
     	proc->wait_state =0; //现在尚未处于等待状态
+ 	proc->rq = NULL;
+	proc->run_link.prev = proc->run_link.next = NULL;
+ 	proc->lab6_run_pool.left = proc->lab6_run_pool.right = proc->lab6_run_pool.parent = NULL;
+        proc->time_slice = 0;
     	proc->cptr = NULL; //这些变量是进程间的关系,初始时全部设为NULL
     	proc->yptr = NULL;
     	proc->optr = NULL;
