@@ -402,6 +402,7 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     }
     ret = -E_NO_MEM;
     //LAB4:EXERCISE2 2012011364
+
     /*
      * Some Useful MACROs, Functions and DEFINEs, you can use them in below implementation.
      * MACROs or Functions:

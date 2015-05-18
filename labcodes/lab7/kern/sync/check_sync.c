@@ -193,6 +193,7 @@ void check_sync(void){
         philosopher_proc_sema[i] = find_proc(pid);
         set_proc_name(philosopher_proc_sema[i], "philosopher_sema_proc");
     }
+
     //check condition variable
     monitor_init(&mt, N);
     for(i=0;i<N;i++){

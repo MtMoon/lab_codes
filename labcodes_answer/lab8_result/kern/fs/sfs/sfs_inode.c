@@ -1019,4 +1019,3 @@ static const struct inode_ops sfs_node_fileops = {
     .vop_tryseek                    = sfs_tryseek,
     .vop_truncate                   = sfs_truncfile,
 };
-
