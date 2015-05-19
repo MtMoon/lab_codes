@@ -624,15 +624,18 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
     	}
 
     	alen= size;  //已经读/写了这么多，会在后面out处alenp
+
+        if (nblks == 0) { //这里的顺序不能错，应先加alen，然后判断退出
+        	                          //nblks是无符号数！
+        	goto out; //若一开始读写长度小于一个block，那么上面的对齐buf读写已经完成操作，直接准备退出
+        }
+
     	buf += size; //移动buf首位置，跳过已经读/写的部分
     	blkno++; //如果offset不对齐SFS_BLKSIZE，则blkno为不对齐部分的blkno，不对齐部分已经用sfs_buf_op读了，则跳过该blk
     	nblks--; //减去offset未对齐的那个block
     }
 
-    if (nblks<0) {
 
-    	goto out; //若一开始读写长度小于一个block，那么上面的对齐buf读写已经完成操作，直接准备退出
-    }
 
     //(2) 按block读取余下数据
     int i = 0;

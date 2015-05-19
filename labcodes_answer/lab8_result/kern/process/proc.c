@@ -575,12 +575,15 @@ do_exit(int error_code) {
 static int
 load_icode_read(int fd, void *buf, size_t len, off_t offset) {
     int ret;
+    //cprintf("lala1 \n");
     if ((ret = sysfile_seek(fd, offset, LSEEK_SET)) != 0) {
         return ret;
     }
+    //cprintf("lala2 \n");
     if ((ret = sysfile_read(fd, buf, len)) != len) {
         return (ret < 0) ? ret : -1;
     }
+    //cprintf("lala3 \n");
     return 0;
 }
 

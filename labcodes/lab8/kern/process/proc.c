@@ -492,7 +492,7 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
 
     //赋值父进程的filesp，感觉这个只要在alloc_proc之后做就可以
     //直接调用copy_fs函数
-    if (copy_fs(clone_flags,proc) != 0) {
+    if (copy_files(clone_flags,proc) != 0) {
     	goto bad_fork_cleanup_fs;
     }
 
@@ -596,12 +596,16 @@ do_exit(int error_code) {
 static int
 load_icode_read(int fd, void *buf, size_t len, off_t offset) {
     int ret;
+    //cprintf("lala1 \n");
     if ((ret = sysfile_seek(fd, offset, LSEEK_SET)) != 0) {
         return ret;
     }
+    //cprintf("lala2 \n");
     if ((ret = sysfile_read(fd, buf, len)) != len) {
+    	//cprintf("lalala2.5ret:%d   len:%d \n", ret,len);
         return (ret < 0) ? ret : -1;
     }
+    //cprintf("lala3 \n");
     return 0;
 }
 
@@ -634,7 +638,7 @@ load_icode(int fd, int argc, char **kargv) {
     }
 
     //(2) create a new PDT, and mm->pgdir= kernel virtual addr of PDT
-    if (setup_pgdir(mm) != 0) { //申请一个新的页表,在setup_pgdir中可以看到,该页表被复制了boot_pgdir的内容,然后把mm->pgdir设为了该页表
+    if (setup_pgdir(mm) != 0) { //申请一个新的页作为页表,在setup_pgdir中可以看到,该页表被复制了boot_pgdir的内容,然后把mm->pgdir设为了该页表
         goto bad_pgdir_cleanup_mm;
     }
 
@@ -649,7 +653,7 @@ load_icode(int fd, int argc, char **kargv) {
     	goto bad_elf_cleanup_pgdir;
     }
 
-    if (elf->e_magic != ELF_MAGIC) {
+    if (elf.e_magic != ELF_MAGIC) {
         ret = -E_INVAL_ELF;
         goto bad_elf_cleanup_pgdir;
     }
@@ -658,15 +662,20 @@ load_icode(int fd, int argc, char **kargv) {
     struct proghdr ph;
     uint32_t vm_flags, perm;
     uint32_t proghdrSize = sizeof(struct proghdr);
-    uint32_t pNum = elf->e_phnum;
-    uint32_t i = 0;
-    for ( i = 0; i<pNum; i++) { //逐个读取
+    uint32_t pNum = elf.e_phnum;   //e_phnum是program header表的入口数目
+    uint32_t i = 0;                                    //phoff是program header表在elf文件中的位置偏移
+
+
+
+    for ( i = 0; i<pNum; i++) { //逐个读取program header
 
     	//(3.2) read raw data content in file and resolve proghdr based on info in elfhdr
-    	ret = load_icode_read(fd, &ph, proghdrSize, elf->e_phoff + i*proghdrSize);
+    	ret = load_icode_read(fd, &ph, proghdrSize, elf.e_phoff + i*proghdrSize);
     	if (ret != 0){
     		goto bad_cleanup_mmap;
     	}
+
+    	//cprintf("lalal  %d \n", i);
 
         if (ph.p_type != ELF_PT_LOAD) {
             continue ;
@@ -679,42 +688,52 @@ load_icode(int fd, int argc, char **kargv) {
             continue ;
         }
 
+        //这些都沿用lab7的就行
 
         vm_flags = 0, perm = PTE_U;
-        if (ph->p_flags & ELF_PF_X) vm_flags |= VM_EXEC;
-        if (ph->p_flags & ELF_PF_W) vm_flags |= VM_WRITE;
-        if (ph->p_flags & ELF_PF_R) vm_flags |= VM_READ;
+        if (ph.p_flags & ELF_PF_X) vm_flags |= VM_EXEC;
+        if (ph.p_flags & ELF_PF_W) vm_flags |= VM_WRITE;
+        if (ph.p_flags & ELF_PF_R) vm_flags |= VM_READ;
         if (vm_flags & VM_WRITE) perm |= PTE_W;
 
         //(3.3) call mm_map to build vma related to TEXT/DATA
-        if ((ret = mm_map(mm, ph->p_va, ph->p_memsz, vm_flags, NULL)) != 0) { //建立合法空间
+        if ((ret = mm_map(mm, ph.p_va, ph.p_memsz, vm_flags, NULL)) != 0) { //建立合法空间
             goto bad_cleanup_mmap;
         }
 
 
-        unsigned char *from = binary + ph->p_offset;
         size_t off, size;
         uintptr_t start = ph.p_va, end, la = ROUNDDOWN(start, PGSIZE);
+
         ret = -E_NO_MEM;
-        end = ph.p_va + ph.p_filesz;
+        end = ph.p_va + ph.p_filesz; //段的第一个字节将到放在内存虚址p_va处
+
+        off_t from = ph.p_offset; // p_offset是段相对文件头的偏移
+
         while (start < end) {
 
         	  //(3.4) call pgdir_alloc_page to allocate page for TEXT/DATA, read contents in file and copy them into the new allocated pages
-            if ((page = pgdir_alloc_page(mm->pgdir, la, perm)) == NULL) { //拷贝及建立关系
+            if ((page = pgdir_alloc_page(mm->pgdir, la, perm)) == NULL) { //分配一个页及la到pa的映射
                 goto bad_cleanup_mmap;
             }
 
             off = start - la, size = PGSIZE - off, la += PGSIZE;
+
             if (end < la) {
                 size -= la - end;
             }
-            memcpy(page2kva(page) + off, from, size);
+
+            //从文件中读入一个page放到内存中刚分配的页里
+            if ((ret = load_icode_read(fd, page2kva(page) + off, size, from)) != 0) {
+            	goto bad_cleanup_mmap;
+            }
+
             start += size, from += size;
         }
 
+        end = ph.p_va + ph.p_memsz;
 
         //(3.5) callpgdir_alloc_page to allocate pages for BSS, memset zero in these pages
-        end = ph->p_va + ph->p_memsz;
         if (start < la) {
             /* ph->p_memsz == ph->p_filesz */
             if (start == end) {
@@ -728,6 +747,7 @@ load_icode(int fd, int argc, char **kargv) {
             start += size;
             assert((end < la && start == end) || (end >= la && start == la));
         }
+
         while (start < end) {
             if ((page = pgdir_alloc_page(mm->pgdir, la, perm)) == NULL) {
                 goto bad_cleanup_mmap;
@@ -740,6 +760,9 @@ load_icode(int fd, int argc, char **kargv) {
             start += size;
         }
     }
+
+    //文件读取完毕，为了安全可以先关闭
+    sysfile_close(fd);
 
 
     //(4) call mm_map to setup user stack, and put parameters into user stack
@@ -759,7 +782,33 @@ load_icode(int fd, int argc, char **kargv) {
     lcr3(PADDR(mm->pgdir)); //页表起始地址更改为用户空间
 
     //(6) setup uargc and uargv in user stacks
-    //这个怎么弄呢(>_<)
+    //把命令行输入的参数压到用户态的用户栈上
+    uint32_t argv_size=0;
+    i = 0;
+    for (i = 0; i < argc; i ++) {
+    	argv_size += strnlen(kargv[i],EXEC_MAX_ARG_LEN + 1) + 1;  		//strnlen - calculate the length of the string @s, not including
+    	//cprintf("kargv: %s \n", kargv[i]);																														// the terminating '\0' char acter, but at most @len.
+    }
+
+    //cprintf("argv_size: %d \n", argv_size);
+    //cprintf("long size: %d \n", sizeof(long));
+    //cprintf("argv_size2: %d \n", (argv_size/sizeof(long)+1) * sizeof(long));
+    //cprintf("char* size: %d \n", sizeof(char*));
+
+    uintptr_t stacktop = USTACKTOP - (argv_size/sizeof(long)+1) * sizeof(long); //向上取整为4byte的倍数，即32位，然后将栈顶向下拉
+    char** uargv=(char **)(stacktop  - argc * sizeof(char *));
+
+    argv_size = 0;
+    for (i = 0; i < argc; i ++) {
+    	uargv[i] = strcpy((char *)(stacktop + argv_size ), kargv[i]); //栈顶存各个参数，向下是指向各个参数的指针，再向下是参数个数，因为各个参数大小不一定
+    	argv_size +=  strnlen(kargv[i],EXEC_MAX_ARG_LEN + 1)+1;
+    }
+
+    stacktop = (uintptr_t)uargv - sizeof(int);
+    *(int *)stacktop = argc;
+
+
+
 
 
     //(7) setup trapframe for user environment
@@ -778,7 +827,7 @@ load_icode(int fd, int argc, char **kargv) {
     tf->tf_ds = USER_DS;
     tf->tf_es = USER_DS;
     tf->tf_ss = USER_DS;
-    tf->tf_esp = USTACKTOP;
+    tf->tf_esp = stacktop;
     tf->tf_eip = elf.e_entry;
     tf->tf_eflags |= FL_IF;
     ret = 0;
@@ -868,7 +917,6 @@ do_execve(const char *name, int argc, const char **argv) {
     files_closeall(current->filesp);
 
     /* sysfile_open will check the first argument path, thus we have to use a user-space pointer, and argv[0] may be incorrect */    
-    //进入内核态，使用内核栈，所以原指针argv指针指向的是用户栈
     int fd;
     if ((ret = fd = sysfile_open(path, O_RDONLY)) < 0) {
         goto execve_exit;
@@ -1045,7 +1093,7 @@ init_main(void *arg) {
         panic("create user_main failed.\n");
     }
  extern void check_sync(void);
-    check_sync();                // check philosopher sync problem
+    //check_sync();                // check philosopher sync problem
 
     while (do_wait(0, NULL) == 0) { //等待子进程,即user_main变为僵尸状态,然后释放user_main
         schedule();
