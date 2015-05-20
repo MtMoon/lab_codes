@@ -32,6 +32,7 @@ vfs_open(char *path, uint32_t open_flags, struct inode **node_store) {
     struct inode *node;
     bool excl = (open_flags & O_EXCL) != 0;
     bool create = (open_flags & O_CREAT) != 0;
+	cprintf("Now it's in vfsfile.c, function vfs_open, file path %s \n", path);
     ret = vfs_lookup(path, &node);
 
     if (ret != 0) {

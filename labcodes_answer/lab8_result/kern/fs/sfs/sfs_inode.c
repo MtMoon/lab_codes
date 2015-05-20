@@ -115,6 +115,7 @@ static int
 sfs_create_inode(struct sfs_fs *sfs, struct sfs_disk_inode *din, uint32_t ino, struct inode **node_store) {
     struct inode *node;
     if ((node = alloc_inode(sfs_inode)) != NULL) {
+		cprintf("Now it's in sfs_inode.c, function sfs_create_inode\n");
         vop_init(node, sfs_get_ops(din->type), info2fs(sfs, sfs));
         struct sfs_inode *sin = vop_info(node, sfs_inode);
         sin->din = din, sin->ino = ino, sin->dirty = 0, sin->reclaim_count = 1;
@@ -171,6 +172,7 @@ sfs_load_inode(struct sfs_fs *sfs, struct inode **node_store, uint32_t ino) {
     }
 
     assert(din->nlinks != 0);
+	cprintf("Now it's in sfs_inode.c, function sfs_load_inode\n");
     if ((ret = sfs_create_inode(sfs, din, ino, &node)) != 0) {
         goto failed_cleanup_din;
     }
@@ -506,6 +508,7 @@ sfs_lookup_once(struct sfs_fs *sfs, struct sfs_inode *sin, const char *name, str
     unlock_sin(sin);
     if (ret == 0) {
 		// load the content of inode with the the NO. of disk block
+		cprintf("Now it's in sfs_inode.c, function sfs_lookup_once, file name %s \n", name);
         ret = sfs_load_inode(sfs, node_store, ino);
     }
     return ret;
@@ -599,6 +602,7 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
      * (3) If end position isn't aligned with the last block, Rd/Wr some content from begin to the (endpos % SFS_BLKSIZE) of the last block
 	 *       NOTICE: useful function: sfs_bmap_load_nolock, sfs_buf_op	
 	*/
+	cprintf("Now it's in sfs_inode.c, function sfs_io_nolock\n");
     if ((blkoff = offset % SFS_BLKSIZE) != 0) {
         size = (nblks != 0) ? (SFS_BLKSIZE - blkoff) : (endpos - offset);
         if ((ret = sfs_bmap_load_nolock(sfs, sin, blkno, &ino)) != 0) {
@@ -655,6 +659,7 @@ sfs_io(struct inode *node, struct iobuf *iob, bool write) {
     lock_sin(sin);
     {
         size_t alen = iob->io_resid;
+		cprintf("Now it's in sfs_inode.c, function sfs_io\n");
         ret = sfs_io_nolock(sfs, sin, iob->io_base, iob->io_offset, &alen, write);
         if (alen != 0) {
             iobuf_skip(iob, alen);
@@ -667,6 +672,7 @@ sfs_io(struct inode *node, struct iobuf *iob, bool write) {
 // sfs_read - read file
 static int
 sfs_read(struct inode *node, struct iobuf *iob) {
+	cprintf("Now it's in sfs_inode.c, function sfs_read\n");
     return sfs_io(node, iob, 0);
 }
 
@@ -973,6 +979,7 @@ out_unlock:
  */
 static int
 sfs_lookup(struct inode *node, char *path, struct inode **node_store) {
+	cprintf("Now it's in sfs_inode.c, function sfs_lookup, file path %s \n", path);
     struct sfs_fs *sfs = fsop_info(vop_fs(node), sfs);
     assert(*path != '\0' && *path != '/');
     vop_ref_inc(node);

@@ -40,8 +40,10 @@ failed_cleanup:
 /* sysfile_open - open file */
 int
 sysfile_open(const char *__path, uint32_t open_flags) {
+	
     int ret;
     char *path;
+	cprintf("Now it's in sysfile.c, function sysfile_open, file path %s \n", __path);
     if ((ret = copy_path(&path, __path)) != 0) {
         return ret;
     }
@@ -59,6 +61,7 @@ sysfile_close(int fd) {
 /* sysfile_read - read file */
 int
 sysfile_read(int fd, void *base, size_t len) {
+	cprintf("Now it's in syscall, function sysfile_read \n");
     struct mm_struct *mm = current->mm;
     if (len == 0) {
         return 0;

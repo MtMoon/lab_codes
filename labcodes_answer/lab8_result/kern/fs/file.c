@@ -153,8 +153,7 @@ file_testfd(int fd, bool readable, bool writable) {
 }
 
 // open file
-int
-file_open(char *path, uint32_t open_flags) {
+int file_open(char *path, uint32_t open_flags) {
     bool readable = 0, writable = 0;
     switch (open_flags & O_ACCMODE) {
     case O_RDONLY: readable = 1; break;
@@ -173,6 +172,7 @@ file_open(char *path, uint32_t open_flags) {
     }
 
     struct inode *node;
+	cprintf("Now it's in file.c, function file_open, file path %s \n", path);
     if ((ret = vfs_open(path, open_flags, &node)) != 0) {
         fd_array_free(file);
         return ret;
@@ -223,6 +223,7 @@ file_read(int fd, void *base, size_t len, size_t *copied_store) {
     fd_array_acquire(file);
 
     struct iobuf __iob, *iob = iobuf_init(&__iob, base, len, file->pos);
+    cprintf("Now it's in function file_read, the fd has been changed to file structure \n");
     ret = vop_read(file->node, iob);
 
     size_t copied = iobuf_used(iob);

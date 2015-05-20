@@ -36,7 +36,7 @@
 /* waitdisk - wait for disk ready */
 static void
 waitdisk(void) {
-    while ((inb(0x1F7) & 0xC0) != 0x40)
+    while ((inb(0x1F7) & 0xC0) != 0x40) //轮询
         /* do nothing */;
 }
 

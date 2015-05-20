@@ -580,6 +580,7 @@ load_icode_read(int fd, void *buf, size_t len, off_t offset) {
         return ret;
     }
     //cprintf("lala2 \n");
+	cprintf("Now it's in proc.c, function load_icode_read\n");
     if ((ret = sysfile_read(fd, buf, len)) != len) {
         return (ret < 0) ? ret : -1;
     }
@@ -615,6 +616,7 @@ load_icode(int fd, int argc, char **kargv) {
      * (7) setup trapframe for user environment
      * (8) if up steps failed, you should cleanup the env.
      */
+	cprintf("Now it's in proc.c, function load_icode\n");
     assert(argc >= 0 && argc <= EXEC_MAX_ARG_NUM);
 
     if (current->mm != NULL) {
@@ -841,6 +843,7 @@ do_execve(const char *name, int argc, const char **argv) {
     files_closeall(current->filesp);
 
     /* sysfile_open will check the first argument path, thus we have to use a user-space pointer, and argv[0] may be incorrect */    
+	//cprintf("Now it's in pro.c, function do_execve, file path %s \n", path);
     int fd;
     if ((ret = fd = sysfile_open(path, O_RDONLY)) < 0) {
         goto execve_exit;
@@ -1016,7 +1019,7 @@ init_main(void *arg) {
         panic("create user_main failed.\n");
     }
  extern void check_sync(void);
-    check_sync();                // check philosopher sync problem
+    //check_sync();                // check philosopher sync problem
 
     while (do_wait(0, NULL) == 0) {
         schedule();

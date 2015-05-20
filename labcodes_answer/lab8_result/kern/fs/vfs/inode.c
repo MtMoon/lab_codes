@@ -26,6 +26,10 @@ __alloc_inode(int type) {
  * */
 void
 inode_init(struct inode *node, const struct inode_ops *ops, struct fs *fs) {
+
+	cprintf("Now it's in inode.c, function inode_init \n");
+	cprintf("_____________________________________________________-\n");
+
     node->ref_count = 0;
     node->open_count = 0;
     node->in_ops = ops, node->in_fs = fs;
