@@ -37,12 +37,13 @@ LabX Clock置换算法
     
 访问位PTE_A和修改位PTE_D都在低8位里，恰好可以用来保存页的访问和修改信息。另外，课上老师讲的是，实现clock算法时，一个页调入内存后，应该访问位置为1，修改位置为0。因此，对swap.c中的swap_in函数略作修改，当获取页表项后，把这两位做相应的修改。
 
-2.clock_swap_out_victim实现
+3.clock_swap_out_victim实现
 ---
 
 获取之前保存的全局指针listptr，从该指针处环形遍历mm结构体中以sm_priv为头的链表。依次检查内存中每个页的访问位与标志位组合，若为11，则修改为00；若为01或10则修改为00；或为00，则退出循环，置换该页。另外，按照课上讲的，选定置换页后，需要把listptr指针指向链表中被置换页的下一页。
 
-*3.*测试
+4.测试
+---
 
 该算法实现起来比较简单，令人捉急的是如何进行测试。swap.c中的check_swap函数，主要是通过check_content_set的写操作，将4个4k的page调入内存，四个页的起始地址分别为0x1000，0x2000，0x3000，0x4000，然后在_fifo_check_swap通过相应的写操作进行测试。但是clock算法就比较捉急，因为需要记录对每个页的读写操作，而此时又没有用户态程序，页无从区别读和写。我的做法是，首先，在swap.c中新增了两个函数，setFlag和check_content_set_clock。测试clock算法时，修改check_swap函数，使其调用check_content_set_clock而非check_content_set进行设置。同样还是通过写0x1000，0x2000，0x3000，0x4000来将四个page调入内存，但在check_content_set_clock中写这四个page时，通过调用setFlag函数，强行改写其页表项的标志位，来模拟读写操作，使得四次操作为读，写，读，写。同样，在swap_clock.c中，页添加setFlag函数。然后，在swap_clock.c的_clock_check_swap函数中，进行多次写操作，但利用setFlag强行置位，模拟对不同页的读和写。测试用例如下：
 
