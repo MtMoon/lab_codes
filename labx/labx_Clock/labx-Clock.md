@@ -47,37 +47,37 @@ LabX Clock置换算法
 
 该算法实现起来比较简单，令人捉急的是如何进行测试。swap.c中的check_swap函数，主要是通过check_content_set的写操作，将4个4k的page调入内存，四个页的起始地址分别为0x1000，0x2000，0x3000，0x4000，然后在_fifo_check_swap通过相应的写操作进行测试。但是clock算法就比较捉急，因为需要记录对每个页的读写操作，而此时又没有用户态程序，页无从区别读和写。我的做法是，首先，在swap.c中新增了两个函数，setFlag和check_content_set_clock。测试clock算法时，修改check_swap函数，使其调用check_content_set_clock而非check_content_set进行设置。同样还是通过写0x1000，0x2000，0x3000，0x4000来将四个page调入内存，但在check_content_set_clock中写这四个page时，通过调用setFlag函数，强行改写其页表项的标志位，来模拟读写操作，使得四次操作为读，写，读，写。同样，在swap_clock.c中，页添加setFlag函数。然后，在swap_clock.c的_clock_check_swap函数中，进行多次写操作，但利用setFlag强行置位，模拟对不同页的读和写。测试用例如下：
 
-    //进行swap out 时，是按照0x4000到0x1000的顺序遍历链表的
-	//设Flag = 访问位修改位
-	//初始时，0x4000 Flag = 10 0x3000 Flag = 11 0x2000 Flag = 10 0x1000 Flag = 11
-
-	//写0x2000，Flag变为11，不缺页
-	cprintf("write Virt Page c in fifo_check_swap\n");
-   * (unsigned char *)0x2000 = 0x0c;
-   setFlagClock(0x2000,1);
-   assert(pgfault_num==4);
-
-   //读0x5000，缺页，此时按照Clock算法，应该将0x4000处的页替换出去
-   cprintf("read Virt Page c in fifo_check_swap\n");
-    * (unsigned char *)0x5000 = 0x0e;
-    assert(pgfault_num==5);
-    setFlagClock(0x5000,0);
-    //被替换出去的是0x4000，那么再读0x4000还会缺页
-    cprintf("read Virt Page c in fifo_check_swap\n");
-    * (unsigned char *)0x4000 = 0x04;
-    assert(pgfault_num==6);
-    setFlagClock(0x4000,0);
-    //按照算法，读0x4000缺页，替换出去的是0x3000,再读0x2000不缺页
-    cprintf("read Virt Page c in fifo_check_swap\n");
-     * (unsigned char *)0x2000 = 0x02;
-    assert(pgfault_num==6);
-     setFlagClock(0x2000,0);
-
-     //此时读0x3000会缺页，替换出去的应该是0x1000
-     cprintf("read Virt Page c in fifo_check_swap\n");
-    * (unsigned char *)0x3000 = 0x03;
-     assert(pgfault_num==7);
-     setFlagClock(0x3000,0);
+        //进行swap out 时，是按照0x4000到0x1000的顺序遍历链表的
+    	//设Flag = 访问位修改位
+    	//初始时，0x4000 Flag = 10 0x3000 Flag = 11 0x2000 Flag = 10 0x1000 Flag = 11
+    
+    	//写0x2000，Flag变为11，不缺页
+    	cprintf("write Virt Page c in fifo_check_swap\n");
+       * (unsigned char *)0x2000 = 0x0c;
+       setFlagClock(0x2000,1);
+       assert(pgfault_num==4);
+    
+       //读0x5000，缺页，此时按照Clock算法，应该将0x4000处的页替换出去
+       cprintf("read Virt Page c in fifo_check_swap\n");
+        * (unsigned char *)0x5000 = 0x0e;
+        assert(pgfault_num==5);
+        setFlagClock(0x5000,0);
+        //被替换出去的是0x4000，那么再读0x4000还会缺页
+        cprintf("read Virt Page c in fifo_check_swap\n");
+        * (unsigned char *)0x4000 = 0x04;
+        assert(pgfault_num==6);
+        setFlagClock(0x4000,0);
+        //按照算法，读0x4000缺页，替换出去的是0x3000,再读0x2000不缺页
+        cprintf("read Virt Page c in fifo_check_swap\n");
+         * (unsigned char *)0x2000 = 0x02;
+        assert(pgfault_num==6);
+         setFlagClock(0x2000,0);
+    
+         //此时读0x3000会缺页，替换出去的应该是0x1000
+         cprintf("read Virt Page c in fifo_check_swap\n");
+        * (unsigned char *)0x3000 = 0x03;
+         assert(pgfault_num==7);
+         setFlagClock(0x3000,0);
 
 
 打印程序运行中的相关信息，得到的输出如下，观察其跟踪的过程信息，和上述假设一直，能够验证算法实现的正确性：
