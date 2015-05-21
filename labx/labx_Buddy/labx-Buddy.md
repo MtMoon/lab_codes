@@ -28,7 +28,7 @@ LabX Buddy算法
     buddy = (unsigned *)ROUNDUP((void *)((uintptr_t)pages + sizeof(struct Page) * npage), PGSIZE);
     uintptr_t freemem= PADDR((uintptr_t)buddy + sizeof(unsigned) * npage*2);
     
-(1) 初始化buddy_init_memmap
+(2) 初始化buddy_init_memmap
 
 初始化时，和实现first-fit时类似，都需要对相关的page进行flags清零，标志位的设置等等。区别在于，在buddy system的实现中，不再需要原来的空闲块链表，此外，需要对buddy数组进行初始化：
 
@@ -42,7 +42,7 @@ LabX Buddy算法
     
 即将二叉树按照从上到下，从左到右的顺序，把节点所对应的块大小依次填入buddy数组中。此时还需要注意，之后的alloc函数分配空间后，返回的是块的首个Page的指针，为了保持接口不变，分配与释放的函数参数及返回值都不应该修改。原来分配时，直接通过空闲块链表来获取相应的Page并返回。buddy system中，为了能在alloc获取对应的Page，在buddy_pmm.c中定义了一个全局Page结构体指针pagebase，并在buddy_init_memmap函数中，将空闲空间的起始地址base存在pagebase里，之后分配时，只需要算出pagebase的rank即可获取。
 
-(2) 分配buddy_alloc_pages
+(3) 分配buddy_alloc_pages
 
 buddy system要求分配的空间必须为2的整数次幂，首先要检查要求分配的大小是否是2的整数次幂，不是的话，要向上舍入到最近的2的整数幂大小，如要求分配3，则应分配4的大小。在buddy_pmm.c中，定义了取左子节点index，右子节点index，父节点index，判断是否是2的幂次，向上舍入到2的幂次等功能的函数和宏。确定了大小之后，则从二叉树的根节点进行搜索，找到满足要求的块并分配，搜索代码如下：
 
@@ -63,7 +63,7 @@ buddy system要求分配的空间必须为2的整数次幂，首先要检查要�
 
 另外需要说明的是，在之后的free函数中，由于接口保持不变，传入参数的仅仅是Page结构体和相应的大小，在buddy system的free中，需要确定该块在二叉树中节点的位置index，即buddy数组中的位置。在alloc时，通过index可以计算出块的首page在pagebase数组中的rank，反之，只要有该rank，也可计算出index。因此对Page结构体略作修改，在其中增加了一个unsigned类型的变量offset，用于保存该块首Page在pagebase数组中的位置。
 
-(3) 释放buddy_free_pages
+(4) 释放buddy_free_pages
 
 释放时，传入Page结构体和相应大小，由于buddy system的实现，这里要求块大小和传入的参数大小应该一致，即不能传入一个4大小的块却只释放3个page。根据传入page中的offset变量值，计算出该节点在buddy数组中的index，将该数组元素的值再次回复，然后从该节点向上再次逐一更新父节点。这里的实现与那篇博文中的略有区别，那篇博文是从叶子节点向上更新，然后遇到分配出去的节点就重置，退出循环。感觉这样的实现是有bug的，就没按照那个，而是直接定位到需要释放的节点。
 
